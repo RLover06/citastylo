@@ -1,0 +1,25 @@
+{
+  "name": "stylo",
+  "version": "1.0.0",
+  "description": "Sistema de agendamiento de citas - Backend, Web y Mobile",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../web && npm install && cd ../mobile && npm install",
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev:web": "cd web && npm run dev",
+    "dev:mobile": "cd mobile && npm start",
+    "build:backend": "cd backend && npm run build",
+    "build:web": "cd web && npm run build",
+    "prisma:generate": "cd backend && npm run prisma:generate",
+    "prisma:migrate": "cd backend && npm run prisma:migrate",
+    "prisma:studio": "cd backend && npm run prisma:studio"
+  },
+  "keywords": [
+    "appointments",
+    "booking",
+    "services"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+
