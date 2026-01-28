@@ -16,6 +16,30 @@ Esta guía te ayudará a configurar y ejecutar el proyecto completo de Stylo.
 CREATE DATABASE stylo;
 ```
 
+## 🗄️ Opcion MySQL (XAMPP)
+
+Si deseas usar MySQL con XAMPP y PHP:
+
+1. Copia `backend-php` a:
+```
+C:\xampp\htdocs\stylo-api
+```
+
+2. Importa el esquema:
+```
+backend-php/database/schema.sql
+```
+
+3. Configura la conexion en:
+```
+backend-php/config/config.php
+```
+
+4. URL base del API:
+```
+http://localhost/stylo-api/public/api
+```
+
 ## 🔧 Backend
 
 1. Navega al directorio del backend:
