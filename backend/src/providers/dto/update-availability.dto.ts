@@ -20,4 +20,3 @@ export class UpdateAvailabilityDto {
   isActive?: boolean;
 }
 
-

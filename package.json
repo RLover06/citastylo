@@ -5,6 +5,8 @@
   "private": true,
   "scripts": {
     "install:all": "npm install && cd backend && npm install && cd ../web && npm install && cd ../mobile && npm install",
+    "dev": "npm run dev:all",
+    "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:web\"",
     "dev:backend": "cd backend && npm run start:dev",
     "dev:web": "cd web && npm run dev",
     "dev:mobile": "cd mobile && npm start",
@@ -20,6 +22,8 @@
     "services"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
 }
-

@@ -260,4 +260,3 @@ Se envían tanto al cliente como al prestador.
 - `409`: Conflict - Conflicto (ej: cita ya existe en ese horario)
 - `500`: Internal Server Error - Error del servidor
 
-

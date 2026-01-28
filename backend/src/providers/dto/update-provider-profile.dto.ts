@@ -27,4 +27,3 @@ export class UpdateProviderProfileDto {
   country?: string;
 }
 
-

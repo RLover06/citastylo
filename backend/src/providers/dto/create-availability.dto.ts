@@ -19,4 +19,3 @@ export class CreateAvailabilityDto {
   endTime: string;
 }
 
-

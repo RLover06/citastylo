@@ -115,4 +115,3 @@ model Reminder {
   @@map("reminders")
 }
 
-

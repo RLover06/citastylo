@@ -155,4 +155,3 @@ stylo/
    - Chat en tiempo real
    - Historial detallado
 
-

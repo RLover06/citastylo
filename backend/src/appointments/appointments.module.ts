@@ -12,4 +12,3 @@ import { RemindersModule } from '../reminders/reminders.module';
 })
 export class AppointmentsModule {}
 
-

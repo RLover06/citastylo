@@ -161,4 +161,3 @@ npm start
 - Asegúrate de que el backend esté accesible desde tu dispositivo
 - Revisa los logs de Expo para más detalles
 
-

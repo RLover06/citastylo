@@ -28,4 +28,3 @@ export class CreateAppointmentDto {
   notes?: string;
 }
 
-
