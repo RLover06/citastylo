@@ -5,10 +5,12 @@ require_once __DIR__ . '/../src/Database.php';
 require_once __DIR__ . '/../src/Request.php';
 require_once __DIR__ . '/../src/Response.php';
 require_once __DIR__ . '/../src/Validators.php';
+require_once __DIR__ . '/../src/WhatsAppClient.php';
 require_once __DIR__ . '/../src/Controllers/AuthController.php';
 require_once __DIR__ . '/../src/Controllers/ClientsController.php';
 require_once __DIR__ . '/../src/Controllers/ProvidersController.php';
 require_once __DIR__ . '/../src/Controllers/AppointmentsController.php';
+require_once __DIR__ . '/../src/Controllers/RemindersController.php';
 
 $config = require __DIR__ . '/../config/config.php';
 $db = new Database($config['db']);
@@ -87,6 +89,12 @@ $routes = [
     }],
     ['GET', '#^/api/availability$#', function () use ($pdo) {
         AppointmentsController::availableSlots($pdo);
+    }],
+    ['POST', '#^/api/reminders/run$#', function () use ($pdo, $config) {
+        RemindersController::run($pdo, $config['whatsapp']);
+    }],
+    ['GET', '#^/api/reminders/run$#', function () use ($pdo, $config) {
+        RemindersController::run($pdo, $config['whatsapp']);
     }],
     ['GET', '#^/api/health$#', function () {
         Response::json(['status' => 'ok']);

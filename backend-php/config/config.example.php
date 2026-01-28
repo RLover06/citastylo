@@ -30,4 +30,11 @@ return [
         'require_api_key' => false,
         'api_key' => 'change-me',
     ],
+    'whatsapp' => [
+        // WhatsApp Cloud API settings
+        'enabled' => false,
+        'api_url' => 'https://graph.facebook.com/v18.0',
+        'phone_number_id' => '',
+        'token' => '',
+    ],
 ];

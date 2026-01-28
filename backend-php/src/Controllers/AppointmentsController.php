@@ -30,9 +30,10 @@ class AppointmentsController
             Response::error('Client not found', 404);
         }
 
-        $provider = $pdo->prepare('SELECT id FROM provider_profiles WHERE id = ?');
+        $provider = $pdo->prepare('SELECT id, user_id FROM provider_profiles WHERE id = ?');
         $provider->execute([(int) $data['providerId']]);
-        if (!$provider->fetch()) {
+        $providerRow = $provider->fetch();
+        if (!$providerRow) {
             Response::error('Provider not found', 404);
         }
 
@@ -82,7 +83,17 @@ class AppointmentsController
             'PENDING',
         ]);
 
-        Response::json(['id' => (int) $pdo->lastInsertId()], 201);
+        $appointmentId = (int) $pdo->lastInsertId();
+
+        self::scheduleReminders(
+            $pdo,
+            $appointmentId,
+            (int) $data['clientId'],
+            (int) $providerRow['user_id'],
+            $data
+        );
+
+        Response::json(['id' => $appointmentId], 201);
     }
 
     public static function list($pdo)
@@ -211,5 +222,48 @@ class AppointmentsController
         }
 
         Response::json($slots);
+    }
+
+    private static function scheduleReminders($pdo, $appointmentId, $clientUserId, $providerUserId, $data)
+    {
+        $dateTime = new DateTime($data['date'] . ' ' . $data['startTime']);
+        $now = new DateTime();
+
+        $reminders = [
+            ['hours' => 24, 'label' => '24 horas'],
+            ['hours' => 2, 'label' => '2 horas'],
+        ];
+
+        foreach ($reminders as $reminder) {
+            $scheduled = (clone $dateTime)->modify('-' . $reminder['hours'] . ' hours');
+            if ($scheduled <= $now) {
+                continue;
+            }
+
+            $clientMsg = 'Recordatorio: tienes una cita de ' . $data['service'] .
+                ' el ' . $data['date'] . ' a las ' . $data['startTime'] .
+                ' (en ' . $reminder['label'] . ').';
+
+            $providerMsg = 'Recordatorio: tienes una cita con un cliente el ' .
+                $data['date'] . ' a las ' . $data['startTime'] .
+                ' (en ' . $reminder['label'] . ').';
+
+            self::insertReminder($pdo, $appointmentId, $clientUserId, $clientMsg, $scheduled);
+            self::insertReminder($pdo, $appointmentId, $providerUserId, $providerMsg, $scheduled);
+        }
+    }
+
+    private static function insertReminder($pdo, $appointmentId, $userId, $message, $scheduled)
+    {
+        $stmt = $pdo->prepare(
+            'INSERT INTO reminders (appointment_id, user_id, message, scheduled_for, is_sent, attempts)
+             VALUES (?, ?, ?, ?, 0, 0)'
+        );
+        $stmt->execute([
+            $appointmentId,
+            $userId,
+            $message,
+            $scheduled->format('Y-m-d H:i:s'),
+        ]);
     }
 }

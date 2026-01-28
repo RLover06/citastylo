@@ -77,6 +77,8 @@ CREATE TABLE IF NOT EXISTS reminders (
   scheduled_for DATETIME NOT NULL,
   sent_at DATETIME NULL,
   is_sent TINYINT(1) NOT NULL DEFAULT 0,
+  attempts INT NOT NULL DEFAULT 0,
+  last_error TEXT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_reminder_schedule (is_sent, scheduled_for),
   CONSTRAINT fk_reminder_appointment

@@ -60,6 +60,8 @@ http://localhost/stylo-api/public/api
 - PUT /appointments/{id}
 - DELETE /appointments/{id}
 - GET /availability?providerId=1&date=2026-01-28
+- POST /reminders/run
+- GET /reminders/run?limit=50
 
 ## Frontend (web y mobile)
 
@@ -80,6 +82,28 @@ EXPO_PUBLIC_API_URL=http://localhost/stylo-api/public/api
 - Prepared statements (PDO)
 - CORS configurable
 - API key opcional (X-API-Key)
+
+## Recordatorios por WhatsApp
+
+1) Configura en `backend-php/config/config.php`:
+```
+'whatsapp' => [
+  'enabled' => true,
+  'api_url' => 'https://graph.facebook.com/v18.0',
+  'phone_number_id' => 'TU_PHONE_NUMBER_ID',
+  'token' => 'TU_TOKEN',
+]
+```
+
+2) Asegura que los usuarios tengan telefono con codigo de pais (ej: 573001112233).
+
+3) Ejecuta el envio con:
+```
+http://localhost/stylo-api/public/api/reminders/run
+```
+
+Puedes programar este endpoint en el Programador de tareas de Windows
+para que se ejecute cada minuto.
 
 ## Nota
 El token devuelto es un placeholder (no JWT). Si deseas seguridad real,
