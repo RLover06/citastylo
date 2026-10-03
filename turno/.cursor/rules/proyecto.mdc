@@ -1,0 +1,37 @@
+---
+description: Contexto y reglas del proyecto Turno (app de citas para barberías)
+alwaysApply: true
+---
+
+# Turno · reglas del proyecto
+
+Stack: React 18 + Vite 5 + react-router 6 + @supabase/supabase-js 2. Sin TypeScript ni librerías de UI: CSS propio en `src/styles.css`.
+
+## Idioma y zona horaria
+- La interfaz es bilingüe (español / inglés). Todo texto visible se escribe con `t('texto en español', 'English text')` de `src/lib/idioma.js`; nunca texto suelto en el JSX. Esto incluye aria-label, placeholder, confirm() y los mensajes de WhatsApp.
+- El idioma se detecta del navegador (español si empieza por "es", si no inglés) y el usuario lo cambia con el botón ES | EN, que se guarda en localStorage.
+- Los comentarios del código van en español de Colombia; el español de la interfaz tutea.
+- Las fechas SIEMPRE se muestran y calculan en `America/Bogota` con las funciones de `src/lib/fechas.js` (ya respetan el idioma activo). No uses `new Date().getDate()` ni `toLocaleDateString()` sin zona.
+- Los celulares se guardan como 10 dígitos que empiezan por 3 (sin +57).
+
+## Base de datos (`supabase/esquema.sql`)
+- Es la fuente de verdad. Si cambias tablas o funciones, edita ese archivo y deja el SQL idempotente (`create or replace`, `if not exists`, `drop policy if exists`).
+- El público (clientes sin sesión) NUNCA lee ni escribe tablas directamente: solo llama funciones `security definer` (`info_barberia`, `turnos_disponibles`, `reservar_cita`, `mis_citas`, `cancelar_cita`, `reprogramar_cita`).
+- Barberos y dueños leen con RLS (`es_miembro`) y modifican citas solo por funciones (`marcar_cita`, `agendar_proxima`, `cancelar_cita`, `reprogramar_cita`).
+- Las citas nunca se borran: cambian de `estado` (`pendiente`, `atendida`, `no_asistio`, `cancelada`).
+- La restricción `sin_cruces` impide dos citas activas del mismo barbero que se traslapen. No la quites.
+- Errores de negocio se lanzan como códigos en MAYÚSCULAS (ej. `HORARIO_OCUPADO`) y se traducen en `src/lib/supabase.js` (`MENSAJES`). Si agregas uno, agrega su traducción en ambos idiomas.
+
+## Frontend
+- Llama funciones con `rpc(nombre, params)` de `src/lib/supabase.js` (ya traduce errores).
+- Para elegir día y hora reutiliza `src/components/SelectorHorario.jsx`.
+- Para ventanas emergentes usa `src/components/Hoja.jsx`.
+- El "perfil" del cliente vive en su celular (`src/lib/cliente.js`): tokens privados de sus citas y su nombre/celular. No pidas contraseña a los clientes.
+- WhatsApp se abre con enlaces `wa.me` (`enlaceWhatsApp`); no hay envío automático (la API oficial cobra por mensaje).
+
+## Diseño
+- Colores y tipografía están en variables CSS de `:root` (verde barbería, latón, rojo). Títulos en "Big Shoulders Display", texto en "Manrope".
+- Móvil primero: todo debe verse bien a 360 px de ancho.
+
+## Legal
+- No se puede reservar sin la casilla de autorización de datos (Ley 1581 de 2012). No la quites ni la marques por defecto para clientes nuevos.

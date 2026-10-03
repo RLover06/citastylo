@@ -1,0 +1,157 @@
+:root {
+  --bg: #F6F7F4; --surface: #FFFFFF; --ink: #16201B; --muted: #5E6B64;
+  --green: #1F4A38; --green-soft: #E3ECE7; --brass: #A87A2A; --brass-soft: #F5EBD8;
+  --red: #B3302C; --red-soft: #F8E4E3; --line: #D8DED9; --wa: #1F8F4E;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0F1613; --surface: #18221D; --ink: #EDF1EE; --muted: #9AA8A0;
+    --green: #5FAE8A; --green-soft: #1E3129; --brass: #D6A955; --brass-soft: #33291A;
+    --red: #E0625D; --red-soft: #3A1E1D; --line: #2B3831; --wa: #25A55C;
+    color-scheme: dark;
+  }
+}
+*, *::before, *::after { box-sizing: border-box }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 Manrope, system-ui, -apple-system, "Segoe UI", sans-serif;
+  padding-bottom: env(safe-area-inset-bottom) }
+button, input, select, textarea { font: inherit; color: inherit }
+button { cursor: pointer }
+button:disabled { cursor: not-allowed; opacity: .4 }
+:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px }
+a { color: var(--green) }
+[hidden] { display: none !important }
+
+.wrap { max-width: 560px; margin: 0 auto; padding: 0 18px 56px }
+
+/* Selector de idioma ES | EN */
+.selector-idioma { position: fixed; top: calc(10px + env(safe-area-inset-top)); right: 12px; z-index: 10; display: flex;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08) }
+.selector-idioma button { border: 0; background: none; border-radius: 999px; padding: 4px 10px; font-size: .78rem;
+  font-weight: 700; letter-spacing: .04em; color: var(--muted) }
+.selector-idioma button[aria-pressed="true"] { background: var(--green); color: #fff }
+
+.wrap.ancho { max-width: 860px }
+
+.display { font-family: "Big Shoulders Display", Impact, "Arial Narrow", sans-serif; font-weight: 800; letter-spacing: .01em; line-height: .95 }
+h1 { font-size: 2.6rem; margin: 0 }
+h2 { font-family: "Big Shoulders Display", Impact, sans-serif; font-weight: 600; font-size: 1.5rem; margin: 26px 0 10px;
+  display: flex; align-items: baseline; gap: 10px }
+h2 .n { font-size: 1rem; color: var(--brass); font-weight: 800 }
+h3 { font-size: 1rem; margin: 18px 0 8px }
+.sub { color: var(--muted); font-size: .92rem; margin: 4px 0 0 }
+.muted { color: var(--muted) }
+.small { font-size: .85rem }
+
+/* Encabezado tipo letrero */
+.letrero { padding: 26px 0 18px; display: flex; gap: 16px; align-items: center }
+.poste { width: 14px; height: 64px; border-radius: 7px; flex: none; border: 2px solid var(--ink);
+  background: repeating-linear-gradient(135deg, var(--red) 0 8px, var(--surface) 8px 14px, var(--green) 14px 22px, var(--surface) 22px 28px);
+  background-size: 100% 40px; animation: girar 3s linear infinite }
+@keyframes girar { to { background-position: 0 40px } }
+@media (prefers-reduced-motion: reduce) { .poste { animation: none } }
+
+.pestanas { display: flex; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; gap: 4px; margin-bottom: 18px }
+.pestanas button { flex: 1; border: 0; background: none; padding: 10px; border-radius: 9px; font-weight: 700; color: var(--muted) }
+.pestanas button[aria-selected="true"] { background: var(--green); color: #fff }
+
+.opciones { display: grid; gap: 8px }
+.opcion { display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: left; width: 100%;
+  background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px; padding: 13px 14px }
+.opcion small { display: block; color: var(--muted); font-size: .82rem }
+.opcion .precio { font-weight: 700; white-space: nowrap }
+.opcion[aria-pressed="true"] { border-color: var(--green); box-shadow: inset 4px 0 0 var(--green) }
+
+.fichas { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin }
+.ficha { flex: none; border: 1.5px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 12px; text-align: center; min-width: 62px }
+.ficha b { display: block; font-family: "Big Shoulders Display", sans-serif; font-size: 1.4rem; line-height: 1 }
+.ficha small { color: var(--muted); font-size: .75rem; display: block }
+.ficha[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: #fff }
+.ficha[aria-pressed="true"] small { color: #fff; opacity: .85 }
+
+.turnos { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px }
+.turno { border: 1.5px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 0; font-weight: 700; font-variant-numeric: tabular-nums }
+.turno[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: #fff }
+.vacio { color: var(--muted); font-size: .92rem; padding: 12px 0 }
+
+label { display: block; font-weight: 700; font-size: .9rem; margin: 12px 0 4px }
+input, select, textarea { width: 100%; padding: 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface) }
+input[type="checkbox"] { width: auto; margin: 3px 0 0 }
+.check { display: flex; gap: 10px; align-items: flex-start; font-weight: 500; font-size: .88rem }
+.error { color: var(--red); font-size: .88rem; min-height: 1.3em; margin-top: 8px }
+.aviso { background: var(--brass-soft); border-radius: 10px; padding: 10px 14px; font-size: .9rem; margin: 12px 0 }
+
+.cta { width: 100%; margin-top: 20px; border: 0; border-radius: 12px; padding: 16px; font-weight: 700; font-size: 1.05rem; background: var(--ink); color: var(--bg) }
+.boton { border: 1.5px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px 14px; font-weight: 700; text-decoration: none; color: inherit; display: inline-block; text-align: center }
+.boton.lleno { background: var(--green); border-color: var(--green); color: #fff }
+.boton.peligro { color: var(--red); border-color: var(--red) }
+.boton.wa { background: var(--wa); border-color: var(--wa); color: #fff }
+.boton.bloque { display: block; width: 100%; margin-top: 10px }
+.mini { font-size: .82rem; padding: 6px 10px; border-radius: 8px }
+.fila { display: flex; gap: 8px; flex-wrap: wrap; align-items: center }
+.enlace { background: none; border: 0; color: var(--muted); text-decoration: underline; padding: 0; font-size: .85rem }
+
+/* Ticket */
+.ticket { background: var(--surface); border: 2px solid var(--ink); border-radius: 14px; padding: 22px; margin-top: 10px; position: relative }
+.ticket::before, .ticket::after { content: ""; position: absolute; top: 50%; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--bg); border: 2px solid var(--ink); transform: translateY(-50%) }
+.ticket::before { left: -13px; clip-path: inset(0 0 0 50%) }
+.ticket::after { right: -13px; clip-path: inset(0 50% 0 0) }
+.ticket .cuando { font-family: "Big Shoulders Display", sans-serif; font-weight: 800; font-size: 2.4rem; line-height: 1; margin: 6px 0 12px }
+dl.datos { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 0; font-size: .95rem }
+dl.datos dt { color: var(--muted) }
+dl.datos dd { margin: 0; font-weight: 700 }
+
+/* Tarjetas de cita */
+.cita { display: grid; grid-template-columns: 66px 1fr; gap: 12px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 10px; padding: 12px 14px; margin-bottom: 8px }
+.cita time { font-family: "Big Shoulders Display", sans-serif; font-weight: 800; font-size: 1.45rem; line-height: 1 }
+.cita time small { display: block; font-family: Manrope, sans-serif; font-size: .75rem; font-weight: 700; color: var(--muted) }
+.cita .quien { font-weight: 700 }
+.cita .que { color: var(--muted); font-size: .88rem }
+.cita.atendida, .cita.cancelada, .cita.no_asistio { opacity: .6 }
+.cita.cancelada .quien { text-decoration: line-through }
+.cita.sin-marcar { border-color: var(--brass); box-shadow: inset 4px 0 0 var(--brass) }
+.etiqueta { display: inline-block; font-size: .72rem; font-weight: 700; border-radius: 6px; padding: 2px 8px; margin-left: 6px; vertical-align: 2px }
+.etiqueta.ok { background: var(--green-soft); color: var(--green) }
+.etiqueta.x { color: var(--red); border: 1px solid var(--red) }
+.etiqueta.alerta { background: var(--brass-soft); color: var(--brass) }
+.acciones { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px }
+
+.cifras { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0 }
+.cifra { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px }
+.cifra b { display: block; font-family: "Big Shoulders Display", sans-serif; font-size: 1.7rem; line-height: 1.1 }
+.cifra small { color: var(--muted); font-size: .78rem }
+
+.caja { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 12px 0 }
+.tabla { width: 100%; border-collapse: collapse; font-size: .92rem }
+.tabla td, .tabla th { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle }
+.tabla input, .tabla select { padding: 8px }
+.dos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+
+/* Panel: barra superior */
+.barra { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line); margin-bottom: 14px }
+.barra .display { font-size: 1.7rem }
+
+/* Hoja inferior (modal) */
+.velo { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; justify-content: center; z-index: 20 }
+.hoja { background: var(--bg); width: 100%; max-width: 560px; max-height: 88vh; overflow: auto; border-radius: 18px 18px 0 0;
+  padding: 20px 18px calc(24px + env(safe-area-inset-bottom)) }
+@media (min-width: 700px) { .velo { align-items: center } .hoja { border-radius: 18px } }
+.hoja-cab { display: flex; justify-content: space-between; align-items: center }
+.hoja-cab h2 { margin: 0 }
+.cerrar { background: none; border: 0; font-size: 1.6rem; line-height: 1; padding: 4px 8px }
+
+.cargando { padding: 40px 0; text-align: center; color: var(--muted) }
+.pie { text-align: center; margin-top: 36px; font-size: .8rem; color: var(--muted) }
+
+@media (max-width: 420px) {
+  h1 { font-size: 2.2rem }
+  .cifras { grid-template-columns: 1fr 1fr }
+  .dos { grid-template-columns: 1fr }
+}
+
+/* Deja espacio para el selector de idioma fijo arriba a la derecha */
+.letrero, .barra { padding-right: 96px }
+@media (max-width: 420px) { .letrero, .barra { padding-top: 48px } .letrero { padding-right: 0 } .barra { padding-right: 0 } }
