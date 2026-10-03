@@ -6,6 +6,18 @@ A mobile-first web app where clients book an appointment in seconds, with no acc
 
 The interface is fully bilingual: it opens in Spanish for Spanish-language browsers and in English otherwise, and the **ES | EN** toggle switches languages instantly and remembers the choice.
 
+## Screenshots
+
+**Client:** pick a service, barber, day and time; get a booking ticket; manage upcoming appointments.
+
+![Booking flow on a phone: choosing a time, booking confirmation and My appointments](docs/screenshots/en-cliente.png)
+
+**Barber dashboard:** daily calendar with appointment status, totals and one-tap WhatsApp reminders.
+
+![Barber dashboard with the day's appointments](docs/screenshots/en-panel.png)
+
+<sub>Screenshots use sample data (fictional shop and clients).</sub>
+
 ## Features
 
 **Clients**

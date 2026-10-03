@@ -12,6 +12,18 @@ App web para que los clientes reserven su turno desde el celular y cada barbero 
 
 Tecnología: React + Vite (frontend), Supabase (base de datos PostgreSQL, inicio de sesión y tiempo real). Todo en planes gratuitos para arrancar.
 
+## Capturas
+
+**Cliente:** elige servicio, barbero, día y hora; recibe su ticket de reserva y administra sus citas.
+
+![Reserva desde el celular: elegir hora, confirmación y Mis citas](docs/screenshots/es-cliente.png)
+
+**Panel del barbero:** calendario del día con el estado de cada cita, totales y recordatorio por WhatsApp con un toque.
+
+![Panel del barbero con las citas del día](docs/screenshots/es-panel.png)
+
+<sub>Las capturas usan datos de ejemplo (negocio y clientes ficticios).</sub>
+
 ---
 
 ## 1. Base de datos (Supabase)
