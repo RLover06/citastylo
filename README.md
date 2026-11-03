@@ -4,6 +4,8 @@
 
 A mobile-first web app where clients book an appointment in seconds, with no account and no password, and each barber manages their day from a live calendar. Built for small barbershops and beauty salons in Montería, Colombia, where most bookings still happen through phone calls, WhatsApp messages and paper notebooks.
 
+**Live demo:** [citastylo.vercel.app](https://citastylo.vercel.app) · book as a client at [/demo](https://citastylo.vercel.app/demo) or open the owner dashboard at [/demo/panel](https://citastylo.vercel.app/demo/panel), no account needed. The demo shop has fictional barbers and clients and resets every night.
+
 The interface is fully bilingual: it opens in Spanish for Spanish-language browsers and in English otherwise, and the **ES | EN** toggle switches languages instantly and remembers the choice.
 
 ## Screenshots
@@ -36,6 +38,10 @@ The interface is fully bilingual: it opens in Spanish for Spanish-language brows
 **Shop owners**
 - Manage services (duration, price, suggested return interval), barbers, who offers which service, opening hours with lunch breaks, days off, slot interval, cancellation window and booking limits per client.
 - Invite barbers by email; they are linked automatically on first sign-in.
+- **Stats:** monthly revenue, completed visits, average ticket and no-show rate, compared with the previous month, plus a six-month revenue chart and breakdowns by barber and by service.
+
+**Demo**
+- A sample shop at `/demo` (booking page) and `/demo/panel` (owner dashboard, no sign-in) with three barbers, five services and six months of history. Visitors can try every calendar action; settings are read-only. A nightly `pg_cron` job (`reiniciar_demo()`) rebuilds it.
 
 ## Tech stack
 
@@ -100,6 +106,7 @@ src/pages/Reserva.jsx           Public shop page: booking and "My appointments"
 src/pages/panel/Panel.jsx       Sign-in, shop setup and dashboard shell
 src/pages/panel/Calendario.jsx  Barber calendar and appointment actions
 src/pages/panel/Ajustes.jsx     Hours, days off, shop settings, services and barbers
+src/pages/panel/Estadisticas.jsx  Owner stats: revenue by month, barber and service
 src/pages/Privacidad.jsx        Bilingual privacy policy
 src/components/                 Time slot picker and bottom sheet
 src/lib/idioma.js               Language detection and the t() helper

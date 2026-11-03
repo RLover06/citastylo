@@ -20,6 +20,8 @@ Stack: React 18 + Vite 5 + react-router 6 + @supabase/supabase-js 2. Sin TypeScr
 - Barberos y dueños leen con RLS (`es_miembro`) y modifican citas solo por funciones (`marcar_cita`, `agendar_proxima`, `cancelar_cita`, `reprogramar_cita`).
 - Las citas nunca se borran: cambian de `estado` (`pendiente`, `atendida`, `no_asistio`, `cancelada`).
 - La restricción `sin_cruces` impide dos citas activas del mismo barbero que se traslapen. No la quites.
+- Negocio de demostración: `barberias.es_demo = true` (slug `demo`). Todos cuentan como miembros (`es_miembro`) para ver el panel en `/demo/panel` sin sesión, pero nadie es dueño, así que los ajustes no se pueden cambiar. `reiniciar_demo()` lo borra y lo vuelve a crear cada noche (pg_cron); es la única excepción a "las citas nunca se borran".
+- Estadísticas del dueño: función `estadisticas(p_barberia, p_meses)`; solo el dueño (o la demo).
 - Errores de negocio se lanzan como códigos en MAYÚSCULAS (ej. `HORARIO_OCUPADO`) y se traducen en `src/lib/supabase.js` (`MENSAJES`). Si agregas uno, agrega su traducción en ambos idiomas.
 
 ## Frontend

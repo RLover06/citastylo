@@ -4,7 +4,7 @@ import { t, useIdioma, cambiarIdioma } from './lib/idioma.js'
 import Inicio from './pages/Inicio.jsx'
 import Reserva from './pages/Reserva.jsx'
 import Privacidad from './pages/Privacidad.jsx'
-import Panel from './pages/panel/Panel.jsx'
+import Panel, { PanelDemo } from './pages/panel/Panel.jsx'
 
 export default function App() {
   // Al cambiar el idioma, este componente se vuelve a dibujar y con él toda la app.
@@ -17,6 +17,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Inicio />} />
           <Route path="/panel/*" element={<Panel />} />
+          <Route path="/demo/panel" element={<PanelDemo />} />
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/:slug/privacidad" element={<Privacidad />} />
           <Route path="/:slug" element={<Reserva />} />

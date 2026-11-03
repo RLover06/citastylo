@@ -137,6 +137,14 @@ create table if not exists citas (
   ) where (estado <> 'cancelada')
 );
 
+-- Negocio de demostración (ver sección 9): no tiene dueño con cuenta y
+-- cualquiera puede ver su panel para conocer la app.
+alter table barberias add column if not exists es_demo boolean not null default false;
+alter table barberias alter column owner_id drop not null;
+do $$ begin
+  alter table barberias add constraint dueno_obligatorio check (owner_id is not null or es_demo);
+exception when duplicate_object then null; end $$;
+
 create index if not exists citas_calendario on citas (barberia_id, inicio);
 create index if not exists citas_barbero    on citas (barbero_id, inicio);
 create index if not exists citas_cliente    on citas (cliente_id, inicio);
@@ -144,10 +152,19 @@ create index if not exists citas_cliente    on citas (cliente_id, inicio);
 -- ---------------------------------------------------------------------
 -- 3. AYUDANTES DE PERMISOS
 -- ---------------------------------------------------------------------
+create or replace function es_demo(p_barberia uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from barberias where id = p_barberia and es_demo);
+$$;
+
+-- Miembro = barbero activo del negocio. En el negocio de demostración
+-- todos cuentan como miembros (ven el calendario y prueban las acciones),
+-- pero nadie es dueño: los ajustes no se pueden cambiar.
 create or replace function es_miembro(p_barberia uuid) returns boolean
 language sql stable security definer set search_path = public as $$
   select exists (select 1 from barberos
-                 where barberia_id = p_barberia and user_id = auth.uid() and activo);
+                 where barberia_id = p_barberia and user_id = auth.uid() and activo)
+      or es_demo(p_barberia);
 $$;
 
 create or replace function es_dueno(p_barberia uuid) returns boolean
@@ -216,7 +233,7 @@ create policy gestionar_bloqueos on bloqueos for all
 drop policy if exists ver_clientes on clientes;
 create policy ver_clientes on clientes for select using (es_miembro(barberia_id));
 drop policy if exists editar_clientes on clientes;
-create policy editar_clientes on clientes for update using (es_miembro(barberia_id));
+create policy editar_clientes on clientes for update using (es_miembro(barberia_id) and not es_demo(barberia_id));
 
 -- Citas: el barbero las lee; los cambios pasan por funciones.
 drop policy if exists ver_citas on citas;
@@ -291,7 +308,7 @@ create trigger horario_inicial after insert on barberos
 create or replace function info_barberia(p_slug text) returns json
 language sql stable security definer set search_path = public as $$
   select json_build_object(
-    'id', b.id, 'nombre', b.nombre, 'whatsapp', b.whatsapp, 'direccion', b.direccion,
+    'id', b.id, 'nombre', b.nombre, 'whatsapp', b.whatsapp, 'direccion', b.direccion, 'es_demo', b.es_demo,
     'minutos_para_cancelar', b.minutos_para_cancelar,
     'servicios', coalesce((select json_agg(json_build_object('id',s.id,'nombre',s.nombre,
                    'duracion_min',s.duracion_min,'precio',s.precio) order by s.precio)
@@ -499,6 +516,67 @@ select c.id, c.barberia_id, c.barbero_id, b.nombre as barbero,
   join clientes cl on cl.id = c.cliente_id;
 
 -- ---------------------------------------------------------------------
+-- 7.1 ESTADÍSTICAS DEL DUEÑO
+--     Ingresos y citas por mes, por barbero y por servicio (hora de
+--     Colombia). Solo el dueño, o cualquiera en el negocio de demostración.
+--     Ingresos = precio congelado de las citas atendidas.
+--     Las citas "reprogramadas" no cuentan: su reemplazo ya está contado.
+-- ---------------------------------------------------------------------
+create or replace function estadisticas(p_barberia uuid, p_meses int default 6)
+returns json language plpgsql stable security definer set search_path = public as $$
+declare
+  v_n     int  := greatest(1, least(coalesce(p_meses, 6), 24));
+  v_mes0  date := date_trunc('month', now() at time zone 'America/Bogota')::date;
+  v_desde date;
+  v_hasta date;
+  v       json;
+begin
+  if not (es_dueno(p_barberia) or es_demo(p_barberia)) then raise exception 'SIN_PERMISO'; end if;
+  v_desde := (v_mes0 - make_interval(months => v_n - 1))::date;
+  v_hasta := (v_mes0 + interval '1 month')::date;
+
+  with base as (
+    select to_char(c.inicio at time zone 'America/Bogota', 'YYYY-MM') as mes,
+           c.estado, c.precio, c.barbero_id, c.servicio_id, c.cliente_id
+      from citas c
+     where c.barberia_id = p_barberia
+       and c.inicio >= (v_desde::timestamp at time zone 'America/Bogota')
+       and c.inicio <  (v_hasta::timestamp at time zone 'America/Bogota')
+       and c.cancelada_por is distinct from 'reprogramada'
+  ),
+  meses as (
+    select to_char(g, 'YYYY-MM') as mes
+      from generate_series(v_desde::timestamp, v_mes0::timestamp, interval '1 month') g
+  )
+  select json_build_object(
+    'meses', (select json_agg(x order by x.mes) from (
+        select m.mes,
+               count(b.estado) filter (where b.estado = 'atendida')                 as atendidas,
+               coalesce(sum(b.precio) filter (where b.estado = 'atendida'), 0)     as ingresos,
+               count(b.estado) filter (where b.estado = 'no_asistio')               as no_asistio,
+               count(b.estado) filter (where b.estado = 'cancelada')                as canceladas,
+               count(b.estado) filter (where b.estado = 'pendiente')                as pendientes,
+               count(distinct b.cliente_id) filter (where b.estado = 'atendida')    as clientes
+          from meses m left join base b on b.mes = m.mes
+         group by m.mes) x),
+    'barberos', (select coalesce(json_agg(x), '[]') from (
+        select b.mes, b.barbero_id, ba.nombre,
+               count(*) filter (where b.estado = 'atendida')                       as atendidas,
+               coalesce(sum(b.precio) filter (where b.estado = 'atendida'), 0)     as ingresos,
+               count(*) filter (where b.estado = 'no_asistio')                     as no_asistio
+          from base b join barberos ba on ba.id = b.barbero_id
+         group by b.mes, b.barbero_id, ba.nombre) x),
+    'servicios', (select coalesce(json_agg(x), '[]') from (
+        select b.mes, b.servicio_id, s.nombre,
+               count(*) filter (where b.estado = 'atendida')                       as atendidas,
+               coalesce(sum(b.precio) filter (where b.estado = 'atendida'), 0)     as ingresos
+          from base b join servicios s on s.id = b.servicio_id
+         group by b.mes, b.servicio_id, s.nombre) x)
+  ) into v;
+  return v;
+end $$;
+
+-- ---------------------------------------------------------------------
 -- 8. PERMISOS DE EJECUCIÓN
 -- ---------------------------------------------------------------------
 revoke execute on function _crear_cita(uuid,uuid,uuid,timestamptz,uuid,uuid) from public, anon, authenticated;
@@ -511,16 +589,156 @@ grant execute on function cancelar_cita(uuid,uuid)                              
 grant execute on function reprogramar_cita(timestamptz,uuid,uuid,uuid)               to anon, authenticated;
 grant execute on function sugerir_proxima(uuid)                                      to authenticated;
 
-revoke execute on function crear_barberia(text,text,text,text)       from anon;
-revoke execute on function vincular_barbero()                        from anon;
-revoke execute on function marcar_cita(uuid,estado_cita)             from anon;
-revoke execute on function agendar_proxima(uuid,timestamptz,uuid)    from anon;
+-- Postgres deja toda función ejecutable por PUBLIC; estas solo son para
+-- usuarios con sesión (o para el trigger, que no necesita permiso).
+revoke execute on function crear_barberia(text,text,text,text)       from public, anon;
+revoke execute on function vincular_barbero()                        from public, anon;
+revoke execute on function _horario_inicial()                        from public, anon, authenticated;
 grant  execute on function crear_barberia(text,text,text,text)       to authenticated;
 grant  execute on function vincular_barbero()                        to authenticated;
 grant  execute on function marcar_cita(uuid,estado_cita)             to authenticated;
 grant  execute on function agendar_proxima(uuid,timestamptz,uuid)    to authenticated;
 
+-- El panel de demostración funciona sin sesión; en negocios reales
+-- las funciones revisan que seas dueño o miembro.
+grant execute on function estadisticas(uuid,int)                    to anon, authenticated;
+grant execute on function marcar_cita(uuid,estado_cita)             to anon;
+grant execute on function agendar_proxima(uuid,timestamptz,uuid)    to anon;
+grant execute on function sugerir_proxima(uuid)                     to anon;
+
 -- Tiempo real: la cita nueva le aparece al barbero al instante.
 do $$ begin
   alter publication supabase_realtime add table citas;
 exception when others then null; end $$;
+
+-- ---------------------------------------------------------------------
+-- 9. NEGOCIO DE DEMOSTRACIÓN (tuapp.com/demo y tuapp.com/demo/panel)
+--    Datos inventados para mostrar la app a barberías interesadas:
+--    3 barberos, 5 servicios, 24 clientes ficticios, seis meses de
+--    historial y citas para las próximas dos semanas.
+--    reiniciar_demo() borra y vuelve a crear SOLO el negocio con
+--    es_demo = true; es la única excepción a "las citas nunca se borran",
+--    porque allí cualquiera puede reservar o marcar citas para probar.
+--    Se ejecuta cada noche (3 a.m. de Colombia) con pg_cron.
+-- ---------------------------------------------------------------------
+create or replace function reiniciar_demo() returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_neg       uuid;
+  v_barberos  uuid[];
+  v_servicios uuid[];
+  -- En el mismo orden que v_servicios: de mayor a menor precio
+  v_precios   int[] := array[30000, 20000, 18000, 12000, 8000];
+  v_duracion  int[] := array[60, 30, 30, 30, 15];
+  v_clientes  uuid[];
+  v_hoy       date := (now() at time zone 'America/Bogota')::date;
+  v_nombres   text[] := array[
+    'Juan Camilo Ruiz','Sebastián Torres','Mateo Álvarez','Santiago Rojas','Daniel Vargas','Andrés Felipe Gil',
+    'Nicolás Herrera','Samuel Ortiz','Julián Castro','Alejandro Mejía','David Restrepo','Felipe Romero',
+    'Kevin Morales','Brayan Sánchez','Esteban Ríos','Cristian Muñoz','Óscar Jiménez','Miguel Ángel Pérez',
+    'Jorge Luis Polo','Valentina Ramos','Luisa Fernanda Díaz','Camila Ospina','Tomás Guerra','Emiliano Rivera'];
+  d date; b int; h int; m int; s int; r float8; p float8;
+  v_ini timestamptz; v_estado estado_cita; v_por text; v_pasada boolean;
+begin
+  delete from barberias where es_demo;   -- borra en cascada todo lo del negocio demo
+
+  insert into barberias (nombre, slug, direccion, minutos_para_cancelar, max_citas_por_cliente,
+                         intervalo_minutos, owner_id, es_demo)
+  values ('Barbería El Sinú', 'demo', 'Montería · negocio de demostración', 60, 3, 30, null, true)
+  returning id into v_neg;
+
+  -- Los correos .invalid no existen: nadie puede entrar como estos barberos.
+  with nuevos as (
+    insert into barberos (barberia_id, nombre, email, es_dueno) values
+      (v_neg, 'Carlos Mendoza', 'carlos@demo.invalid', true),
+      (v_neg, 'Andrés Pérez',   'andres@demo.invalid', false),
+      (v_neg, 'Luis Díaz',      'luis@demo.invalid',   false)
+    returning id, nombre)
+  select array_agg(id order by nombre) into v_barberos from nuevos;
+  -- Orden alfabético: [1] Andrés, [2] Carlos, [3] Luis
+  -- Luis no trabaja los lunes; Carlos almuerza de 12 a 2.
+  delete from horarios where barbero_id = v_barberos[3] and dia_semana = 1;
+  delete from horarios where barbero_id = v_barberos[2];
+  insert into horarios (barbero_id, dia_semana, hora_inicio, hora_fin)
+    select v_barberos[2], g, x.i, x.f from generate_series(1,6) g,
+      (values ('09:00'::time, '12:00'::time), ('14:00'::time, '19:00'::time)) x(i, f);
+
+  with nuevos as (
+    insert into servicios (barberia_id, nombre, duracion_min, precio, dias_para_volver) values
+      (v_neg, 'Corte',            30, 20000, 15),
+      (v_neg, 'Corte + barba',    60, 30000, 15),
+      (v_neg, 'Arreglo de barba', 30, 12000, 10),
+      (v_neg, 'Cejas',            15,  8000, 20),
+      (v_neg, 'Corte niño',       30, 18000, 20)
+    returning id, duracion_min, precio)
+  select array_agg(id order by precio desc, duracion_min desc) into v_servicios from nuevos;
+  -- Orden por precio: [1] Corte+barba, [2] Corte, [3] Corte niño, [4] Barba, [5] Cejas
+
+  insert into clientes (barberia_id, nombre, telefono, acepto_datos, creado_en)
+    select v_neg, n, '30099900' || lpad(i::text, 2, '0'), now() - interval '200 days', now() - interval '200 days'
+      from unnest(v_nombres) with ordinality u(n, i);
+  select array_agg(id order by telefono) into v_clientes from clientes where barberia_id = v_neg;
+
+  -- Una cita posible por barbero cada hora; la demanda crece con los meses.
+  for d in select g::date from generate_series(v_hoy - 182, v_hoy + 13, interval '1 day') g loop
+    continue when extract(dow from d) = 0;
+    for b in 1..3 loop
+      continue when b = 3 and extract(dow from d) = 1;
+      for h in 9..18 loop
+        continue when b = 2 and h in (12, 13);
+        if d < v_hoy then p := 0.35 + 0.30 * (1 - (v_hoy - d) / 182.0);
+        elsif d = v_hoy then p := 0.65;
+        else p := greatest(0.12, 0.55 - 0.03 * (d - v_hoy)); end if;
+        if extract(dow from d) in (5, 6) then p := p + 0.15; end if;   -- viernes y sábado se llenan
+        continue when random() > p;
+
+        r := random();
+        s := case when r < 0.42 then 2 when r < 0.67 then 1 when r < 0.82 then 4
+                  when r < 0.92 then 3 else 5 end;
+        m := case when v_duracion[s] <= 30 and random() < 0.3 then 30 else 0 end;
+        v_ini := (d + make_time(h, m, 0)) at time zone 'America/Bogota';
+        v_pasada := v_ini + make_interval(mins => v_duracion[s]) < now();
+
+        v_por := null;
+        if not v_pasada then v_estado := 'pendiente';
+        elsif d >= v_hoy - 1 and h >= 17 then v_estado := 'pendiente';   -- quedan "sin marcar"
+        else
+          r := random();
+          if r < 0.85 then v_estado := 'atendida';
+          elsif r < 0.93 then v_estado := 'no_asistio';
+          else v_estado := 'cancelada'; v_por := 'cliente'; end if;
+        end if;
+
+        insert into citas (barberia_id, barbero_id, servicio_id, cliente_id, inicio, fin,
+                           precio, estado, cancelada_por, creada_en)
+        values (v_neg, v_barberos[b], v_servicios[s],
+                v_clientes[1 + floor(random() * array_length(v_clientes, 1))::int],
+                v_ini, v_ini + make_interval(mins => v_duracion[s]),
+                v_precios[s], v_estado, v_por, least(now(), v_ini - interval '2 days'));
+      end loop;
+    end loop;
+  end loop;
+
+  -- Un día libre de ejemplo para Andrés
+  insert into bloqueos (barbero_id, inicio, fin, motivo)
+    values (v_barberos[1], ((v_hoy + 9) + time '00:00') at time zone 'America/Bogota',
+            ((v_hoy + 10) + time '00:00') at time zone 'America/Bogota', 'Diligencia personal');
+  delete from citas where barbero_id = v_barberos[1]
+     and inicio >= ((v_hoy + 9) + time '00:00') at time zone 'America/Bogota'
+     and inicio <  ((v_hoy + 10) + time '00:00') at time zone 'America/Bogota';
+end $$;
+
+revoke execute on function reiniciar_demo() from public, anon, authenticated;
+
+-- Reinicio automático cada noche (08:00 UTC = 3:00 a.m. en Colombia).
+do $$ begin
+  create extension if not exists pg_cron;
+  perform cron.schedule('turno-reiniciar-demo', '0 8 * * *', 'select public.reiniciar_demo()');
+exception when others then
+  raise notice 'pg_cron no disponible: corre select reiniciar_demo(); a mano cuando quieras refrescar la demo';
+end $$;
+
+-- Crear la demo la primera vez (si ya existe, no se toca).
+do $$ begin
+  if not exists (select 1 from barberias where es_demo) then perform reiniciar_demo(); end if;
+end $$;

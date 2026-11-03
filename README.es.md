@@ -6,7 +6,9 @@ App web para que los clientes reserven su turno desde el celular y cada barbero 
 
 - **Cliente:** reserva sin crear cuenta (nombre + WhatsApp), ve sus citas, cambia la hora o cancela desde el mismo celular.
 - **Barbero:** entra con Google o con un enlace al correo, ve su calendario (nada se borra), marca atendido / no vino, reprograma, cancela, agenda la próxima cita y recuerda por WhatsApp con un toque.
-- **Dueño:** además administra servicios, barberos, horarios, días libres y reglas del negocio.
+- **Dueño:** además administra servicios, barberos, horarios, días libres y reglas del negocio, y ve sus **estadísticas**: ingresos, citas atendidas, valor promedio por cita y porcentaje de inasistencia de cada mes comparados con el anterior, una gráfica de los últimos seis meses y el detalle por barbero y por servicio.
+
+**Demo en vivo:** [citastylo.vercel.app](https://citastylo.vercel.app) · reserva como cliente en [/demo](https://citastylo.vercel.app/demo) o abre el panel del dueño en [/demo/panel](https://citastylo.vercel.app/demo/panel), sin crear cuenta. La barbería de demostración tiene barberos y clientes inventados y se reinicia cada noche.
 
 **Idiomas / Languages:** la app abre en español si el navegador está en español y en inglés en cualquier otro caso. El botón **ES | EN** de la esquina superior permite cambiarlo y se recuerda la elección. *The app opens in Spanish for Spanish-language browsers and in English otherwise; the ES | EN toggle switches it and remembers the choice.*
 
@@ -34,7 +36,9 @@ Tecnología: React + Vite (frontend), Supabase (base de datos PostgreSQL, inicio
    - **Email:** actívalo (viene activo).
    - **Google:** actívalo con un Client ID y Secret de [Google Cloud Console](https://console.cloud.google.com/apis/credentials) (tipo "Aplicación web"; en "URI de redireccionamiento autorizados" pon la que te muestra Supabase).
 4. Ve a **Authentication → URL Configuration** y en **Site URL** pon la dirección de tu app (en desarrollo `http://localhost:5173`). En **Redirect URLs** agrega `http://localhost:5173/panel` y, cuando la publiques, `https://TU-DOMINIO/panel`.
-5. Ve a **Project Settings → API** y copia la **Project URL** y la clave **anon public**.
+5. Ve a **Project Settings → API** y copia la **Project URL** y la clave pública (**publishable** o **anon public**).
+
+El esquema también crea la barbería de demostración (`/demo` y `/demo/panel`) y programa con `pg_cron` su reinicio cada noche a las 3 a.m. de Colombia. Para refrescarla a mano: `select reiniciar_demo();` en el SQL Editor.
 
 > Nota: el correo integrado de Supabase envía pocos correos por hora. Para producción configura un SMTP propio (Authentication → Emails → SMTP), por ejemplo Resend o Brevo, que tienen planes gratis.
 
@@ -73,6 +77,7 @@ src/pages/Reserva.jsx       Página pública del negocio: reservar y "Mis citas"
 src/pages/panel/Panel.jsx   Entrada, registro del negocio y barra del panel
 src/pages/panel/Calendario.jsx  Calendario del barbero y acciones sobre cada cita
 src/pages/panel/Ajustes.jsx Horario, días libres, negocio, servicios y barberos
+src/pages/panel/Estadisticas.jsx  Estadísticas del dueño: ingresos por mes, barbero y servicio
 src/pages/Privacidad.jsx    Política de tratamiento de datos (Ley 1581 de 2012)
 src/components/             Selector de horario y hoja emergente
 src/lib/                    Conexión a Supabase, idioma (ES/EN), fechas en hora de Colombia, datos del cliente

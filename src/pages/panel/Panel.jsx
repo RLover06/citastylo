@@ -4,6 +4,10 @@ import { supabase, rpc, traducirError } from '../../lib/supabase.js'
 import { t } from '../../lib/idioma.js'
 import Calendario from './Calendario.jsx'
 import Ajustes from './Ajustes.jsx'
+import Estadisticas from './Estadisticas.jsx'
+
+// Enlace del negocio de demostración (ver sección 9 de supabase/esquema.sql)
+export const SLUG_DEMO = 'demo'
 
 export default function Panel() {
   const [sesion, setSesion] = useState(undefined)
@@ -17,6 +21,12 @@ export default function Panel() {
   if (sesion === undefined) return <div className="wrap"><p className="cargando">{t('Cargando…', 'Loading…')}</p></div>
   if (!sesion) return <Entrar />
   return <Espacio sesion={sesion} />
+}
+
+// Panel de la barbería de demostración: se ve sin iniciar sesión.
+// Se pueden probar las acciones del calendario, pero no los ajustes.
+export function PanelDemo() {
+  return <Espacio demo />
 }
 
 /* ---------------- Entrar ---------------- */
@@ -83,20 +93,32 @@ function Entrar() {
 
 /* ---------------- Espacio de trabajo ---------------- */
 
-function Espacio({ sesion }) {
+function Espacio({ sesion, demo = false }) {
   const [datos, setDatos] = useState(undefined)
   const [vista, setVista] = useState('calendario')
   const [error, setError] = useState('')
   const [copiado, setCopiado] = useState(false)
 
+  const usuario = sesion?.user.id
   const cargar = useCallback(async () => {
     try {
-      await rpc('vincular_barbero')
-      const { data: yo, error: e1 } = await supabase.from('barberos')
-        .select('*, barberias(*)').eq('user_id', sesion.user.id).eq('activo', true).order('creado_en').limit(1)
-      if (e1) throw e1
-      if (!yo?.length) return setDatos(null)
-      const negocio = yo[0].barberias
+      let yo, negocio
+      if (demo) {
+        // En la demo "entras" como el dueño del negocio de ejemplo
+        const { data: neg, error: e0 } = await supabase.from('barberias').select('*').eq('slug', SLUG_DEMO).eq('es_demo', true).maybeSingle()
+        if (e0) throw e0
+        if (!neg) throw new Error(t('La demostración no está disponible en este momento.', 'The demo is not available right now.'))
+        const { data: dueno, error: e1 } = await supabase.from('barberos').select('*').eq('barberia_id', neg.id).eq('es_dueno', true).limit(1)
+        if (e1) throw e1
+        negocio = neg; yo = dueno
+      } else {
+        await rpc('vincular_barbero')
+        const { data, error: e1 } = await supabase.from('barberos')
+          .select('*, barberias(*)').eq('user_id', usuario).eq('activo', true).order('creado_en').limit(1)
+        if (e1) throw e1
+        if (!data?.length) return setDatos(null)
+        yo = data; negocio = data[0].barberias
+      }
       const [{ data: barberos, error: e2 }, { data: servicios, error: e3 }] = await Promise.all([
         supabase.from('barberos').select('*').eq('barberia_id', negocio.id).order('creado_en'),
         supabase.from('servicios').select('*').eq('barberia_id', negocio.id).order('precio'),
@@ -104,7 +126,7 @@ function Espacio({ sesion }) {
       if (e2 || e3) throw e2 || e3
       setDatos({ yo: yo[0], negocio, barberos, servicios })
     } catch (e) { setError(e.message && !e.code ? e.message : traducirError(e)) }
-  }, [sesion.user.id])
+  }, [usuario, demo])
 
   useEffect(() => { cargar() }, [cargar])
 
@@ -133,8 +155,21 @@ function Espacio({ sesion }) {
           <div className="display">{negocio.nombre}</div>
           <div className="small muted">{yo.nombre}{yo.es_dueno ? ` · ${t('dueño', 'owner')}` : ''}</div>
         </div>
-        <button className="enlace" onClick={salir}>{t('Salir', 'Sign out')}</button>
+        {demo
+          ? <Link className="enlace" to="/">{t('Salir de la demo', 'Exit demo')}</Link>
+          : <button className="enlace" onClick={salir}>{t('Salir', 'Sign out')}</button>}
       </div>
+
+      {demo && (
+        <div className="demo-cinta">
+          <b>{t('Estás viendo una barbería de demostración.', 'You are viewing a demo barbershop.')}</b>{' '}
+          {t(
+            'Los clientes y las citas son inventados. Prueba marcar citas, cambiar horas o agendar la próxima: todo vuelve a empezar cada noche. En tu propio panel también configuras horarios, servicios y barberos.',
+            'Clients and appointments are made up. Try marking appointments, rescheduling or booking a next visit: everything resets every night. In your own dashboard you also set up hours, services and barbers.',
+          )}{' '}
+          <Link to="/panel">{t('Crear mi negocio gratis', 'Set up my business for free')}</Link>
+        </div>
+      )}
 
       <div className="caja fila" style={{ justifyContent: 'space-between' }}>
         <div className="small"><span className="muted">{t('Enlace para tus clientes:', 'Booking link for your clients:')}</span><br /><b>{enlace.replace(/^https?:\/\//, '')}</b></div>
@@ -146,14 +181,19 @@ function Espacio({ sesion }) {
 
       <div className="pestanas" role="tablist">
         <button role="tab" aria-selected={vista === 'calendario'} onClick={() => setVista('calendario')}>{t('Calendario', 'Calendar')}</button>
-        <button role="tab" aria-selected={vista === 'ajustes'} onClick={() => setVista('ajustes')}>
-          {yo.es_dueno ? t('Ajustes', 'Settings') : t('Mi horario', 'My hours')}
-        </button>
+        {yo.es_dueno && (
+          <button role="tab" aria-selected={vista === 'estadisticas'} onClick={() => setVista('estadisticas')}>{t('Estadísticas', 'Stats')}</button>
+        )}
+        {!demo && (
+          <button role="tab" aria-selected={vista === 'ajustes'} onClick={() => setVista('ajustes')}>
+            {yo.es_dueno ? t('Ajustes', 'Settings') : t('Mi horario', 'My hours')}
+          </button>
+        )}
       </div>
 
-      {vista === 'calendario'
-        ? <Calendario {...datos} />
-        : <Ajustes {...datos} onCambio={cargar} />}
+      {vista === 'calendario' && <Calendario {...datos} />}
+      {vista === 'estadisticas' && <Estadisticas negocio={negocio} />}
+      {vista === 'ajustes' && <Ajustes {...datos} onCambio={cargar} />}
     </div>
   )
 }

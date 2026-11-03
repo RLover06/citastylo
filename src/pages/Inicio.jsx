@@ -29,6 +29,18 @@ export default function Inicio() {
         <Link className="boton lleno" to="/panel">{t('Entrar al panel', 'Go to dashboard')}</Link>
       </div>
 
+      <div className="caja">
+        <h3 style={{ marginTop: 0 }}>{t('Mira cómo funciona', 'See how it works')}</h3>
+        <p className="muted">{t(
+          'Una barbería de ejemplo con tres barberos y seis meses de citas. Pruébala como cliente o como dueño, sin crear cuenta.',
+          'A sample barbershop with three barbers and six months of appointments. Try it as a client or as the owner, no account needed.',
+        )}</p>
+        <div className="fila">
+          <Link className="boton" to="/demo">{t('Reservar como cliente', 'Book as a client')}</Link>
+          <Link className="boton" to="/demo/panel">{t('Ver el panel del dueño', 'See the owner dashboard')}</Link>
+        </div>
+      </div>
+
       <p className="pie"><Link to="/privacidad">{t('Política de tratamiento de datos', 'Data privacy policy')}</Link></p>
     </div>
   )

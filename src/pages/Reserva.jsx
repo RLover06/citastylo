@@ -36,6 +36,17 @@ export default function Reserva() {
         </div>
       </header>
 
+      {negocio.es_demo && (
+        <div className="demo-cinta">
+          <b>{t('Barbería de demostración.', 'Demo barbershop.')}</b>{' '}
+          {t(
+            'Reserva con un nombre y un celular inventados: lo que escribas aquí lo puede ver cualquiera que abra la demo, y todo se borra cada noche.',
+            'Book with a made-up name and phone number: anything you enter here is visible to anyone who opens the demo, and it is all wiped every night.',
+          )}{' '}
+          <Link to="/demo/panel">{t('Ver el panel del dueño', 'See the owner dashboard')}</Link>
+        </div>
+      )}
+
       <div className="pestanas" role="tablist">
         <button role="tab" aria-selected={vista === 'reservar'} onClick={() => setVista('reservar')}>{t('Reservar turno', 'Book')}</button>
         <button role="tab" aria-selected={vista === 'mis'} onClick={() => setVista('mis')}>{t('Mis citas', 'My appointments')}</button>
@@ -55,7 +66,8 @@ export default function Reserva() {
 /* ---------------- Reservar ---------------- */
 
 function Reservar({ negocio, slug, onVerMisCitas }) {
-  const guardado = datosCliente()
+  // En la demo no se rellenan ni se guardan los datos reales del cliente
+  const guardado = negocio.es_demo ? { nombre: '', telefono: '' } : datosCliente()
   const [servicio, setServicio] = useState(null)
   const [turno, setTurno] = useState(null)
   const [nombre, setNombre] = useState(guardado.nombre)
@@ -81,7 +93,7 @@ function Reservar({ negocio, slug, onVerMisCitas }) {
         p_nombre: nombre.trim(), p_telefono: tel, p_acepta_datos: true,
       })
       guardarToken(r.token)
-      guardarDatosCliente(nombre.trim(), tel)
+      if (!negocio.es_demo) guardarDatosCliente(nombre.trim(), tel)
       const barbero = negocio.barberos.find(b => b.id === r.barbero_id)
       setHecha({ ...r, servicio: srv, barbero: barbero?.nombre, nombre: nombre.trim() })
       window.scrollTo(0, 0)
