@@ -571,7 +571,15 @@ begin
                count(*) filter (where b.estado = 'atendida')                       as atendidas,
                coalesce(sum(b.precio) filter (where b.estado = 'atendida'), 0)     as ingresos
           from base b join servicios s on s.id = b.servicio_id
-         group by b.mes, b.servicio_id, s.nombre) x)
+         group by b.mes, b.servicio_id, s.nombre) x),
+    -- Para comparar el mes en curso con los mismos días del mes anterior
+    'mes_anterior_a_la_fecha', (select json_build_object(
+        'atendidas', count(*) filter (where c.estado = 'atendida'),
+        'ingresos',  coalesce(sum(c.precio) filter (where c.estado = 'atendida'), 0))
+      from citas c
+     where c.barberia_id = p_barberia
+       and c.inicio >= ((v_mes0 - interval '1 month')::timestamp at time zone 'America/Bogota')
+       and c.inicio <  now() - interval '1 month')
   ) into v;
   return v;
 end $$;

@@ -47,10 +47,15 @@ export default function Estadisticas({ negocio }) {
     if (!datos || !mes) return null
     const i = datos.meses.findIndex(m => m.mes === mes)
     const actual = datos.meses[i]
-    const anterior = i > 0 ? datos.meses[i - 1] : null
+    const esMesActual = i === datos.meses.length - 1
+    // El mes en curso se compara con los mismos días del mes anterior,
+    // no con el mes anterior completo.
+    const anterior = i === 0 ? null
+      : esMesActual ? { ...datos.meses[i - 1], ...datos.mes_anterior_a_la_fecha }
+      : datos.meses[i - 1]
     const barberos = datos.barberos.filter(b => b.mes === mes).sort((a, b) => b.ingresos - a.ingresos)
     const servicios = datos.servicios.filter(s => s.mes === mes && s.atendidas > 0).sort((a, b) => b.ingresos - a.ingresos)
-    return { actual, anterior, barberos, servicios, esMesActual: i === datos.meses.length - 1 }
+    return { actual, anterior, barberos, servicios, esMesActual }
   }, [datos, mes])
 
   if (error) return <p className="error">{error}</p>
@@ -84,7 +89,9 @@ export default function Estadisticas({ negocio }) {
         {actual.pendientes > 0 && <> · {esMesActual
           ? t(`${actual.pendientes} pendientes`, `${actual.pendientes} upcoming or unmarked`)
           : t(`${actual.pendientes} sin marcar`, `${actual.pendientes} not marked`)}</>}
-        {anterior && <> · {t('comparado con ', 'vs. ')}{nombreMes(anterior.mes)}</>}
+        {anterior && <> · {esMesActual
+          ? t(`comparado con los mismos días de ${nombreMes(anterior.mes)}`, `vs. the same days of ${nombreMes(anterior.mes)}`)
+          : t(`comparado con ${nombreMes(anterior.mes)}`, `vs. ${nombreMes(anterior.mes)}`)}</>}
       </p>
 
       <h3>{t('Ingresos de los últimos 6 meses', 'Revenue, last 6 months')}</h3>
